@@ -4,13 +4,15 @@ from django.db.models.query import QuerySet
 from django.utils import timezone
 from datetime import timedelta, datetime
 import requests
-from requests import post
+from requests import post, put, get, Response
 from .credentials import CLIENT_ID, CLIENT_SECRET
+from typing import Dict
 
 BASE_URL = "https://api.spotify.com/v1/me/"
 
 def get_user_tokens(session_id: str)-> SpotifyToken:
     user_tokens: QuerySet = SpotifyToken.objects.filter(user=session_id)
+    print(user_tokens)
     if user_tokens.exists():
         return user_tokens[0]
     else:
@@ -53,7 +55,7 @@ def is_spotify_authenticated(session_id: str) -> bool:
 def refresh_spotify_token(session_id: str):
     refresh_token: str = get_user_tokens(session_id).refresh_token
 
-    response: requests.Response = post('https://accounts.spotify.com/api/token', data={
+    response: requests.Response.json = post('https://accounts.spotify.com/api/token', data={
         'grant_type': 'refresh_token',
         'refresh_token': refresh_token,
         'client_id': CLIENT_ID,
@@ -69,3 +71,18 @@ def refresh_spotify_token(session_id: str):
         session_id, access_token, token_type, expires_in, refresh_token)
 
 
+# sends requests to spotify api 
+def execute_spotify_api_request(session_id: str, endpoint: str, post_=False, put_=False) -> Dict:
+    tokens: SpotifyToken = get_user_tokens(session_id)
+    headers: Dict = {'Content-Type': 'application/json',
+               'Authorization': "Bearer " + tokens.access_token}
+    if post_:
+        post(BASE_URL + endpoint, headers=headers)
+    if put_:
+        put(BASE_URL + endpoint, headers=headers)
+
+    response: Response = get(BASE_URL + endpoint, {}, headers=headers)
+    try:
+        return response.json()
+    except:
+        return {'Error': 'Issue with request'}

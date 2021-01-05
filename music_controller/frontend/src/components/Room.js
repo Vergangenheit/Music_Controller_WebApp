@@ -40,7 +40,7 @@ export default class Room extends Component {
           isHost: data.is_host,
         });
         if (this.state.isHost) {
-          // this.authenticateSpotify();
+          this.authenticateSpotify();
         }
       });
   }
@@ -49,9 +49,9 @@ export default class Room extends Component {
     // send a request to be to ask if user is authenticated but only when user is a host, 
     // therefore we have to wait for getRoomDetails to return
     fetch('/spotify/is-authenticated').then((response) => response.json()).then((data) => {
-      this.setState({ spotifyAuthenticated: data.status });
+      this.setState({ spotifyAuthenticated: data.is_auth });
       // if the user is not authenticated we need to auth them
-      if (!data.status) {
+      if (!data.is_auth) {
         fetch('/spotify/get-auth-url').then((response) => response.json())
         .then((data) => {
           // redirects us to the spotify authorization page

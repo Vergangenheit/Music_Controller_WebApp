@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpRequest
+from django.http import HttpRequest, JsonResponse
 from .credentials import CLIENT_ID, CLIENT_SECRET,REDIRECT_URI
 from rest_framework.views import APIView
 import requests
@@ -7,12 +7,15 @@ from requests import Request, post
 from rest_framework import status
 from rest_framework.response import Response
 from requests.models import PreparedRequest
-from .util import update_or_create_user_tokens, get_user_tokens, is_spotify_authenticated
+from api.models import Room
+from .util import *
+from typing import Dict, Union
+import json
 # Create your views here.
 
 # VIEW THAT WILL authenticate our app or request access
 class AuthURL(APIView):
-    def get(self, request: Request, format=None) -> Response:
+    def get(self, request: Request, format=None) -> JsonResponse:
         # scope is what info we wanna access(spotify docs)
         scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing'
 
@@ -22,8 +25,8 @@ class AuthURL(APIView):
             'redirect_uri': REDIRECT_URI,
             'client_id': CLIENT_ID,
         }).prepare().url
+        print(url)
         # we're nt sending the request cause it will have to arrive to the frontend first
-
         return Response({'url': url}, status=status.HTTP_200_OK)
 
 # we need an endpoint(callback) can can take the (code, state) from the authorization access uopn logging-in
@@ -58,14 +61,32 @@ def spotify_callback(request: HttpRequest, format=None):
 
 # a view to check if user is authentcated
 class IsAuthenticated(APIView):
-    def get(self, request: HttpRequest, format=None):
-        # we're callin the util function
-        is_authenticated: bool = is_spotify_authenticated(self.request.session.session_key)
-        return Response({'status': is_authenticated}, status=status.HTTP_200_OK)
+    def get(self, request: HttpRequest, format=None) -> Union[JsonResponse, Response]:
+        is_authenticated: bool = is_spotify_authenticated(
+            self.request.session.session_key)
+        
+        return Response(data={'is_auth': is_authenticated}, status=status.HTTP_200_OK)
+
+        
+        # return Response({'Invalid request': 'not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
 
     
+# returns info about the current song
+class CurrentSong(APIView):
+    def get(self, request: HttpRequest, format=None):
+        room_code = self.request.session.get('room_code')
+        room: Room = Room.objects.filter(code=room_code)
+        if room.exists():
+            room = room[0]
+        else:
+            return Response({}, status=status.HTTP_200_OK)
+        host: str = room.host
+        # specify the endpoint to access songs from spotify api
+        endpoint = "player/currently-playing"
+        response: Dict = execute_spotify_api_request(host, endpoint)
+        print(response)
 
-
+        return Response(response, status=status.HTTP_200_OK)
 
 
 

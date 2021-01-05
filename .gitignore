@@ -1,0 +1,5 @@
+music_controller/secret.txt
+music_controller/spotify/credentials.py
+*/db.sqlite3
+music_controller/music_controller/settings.py
+*/__pycache__
