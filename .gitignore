@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 music_controller/secret.txt
 music_controller/spotify/credentials.py
 */db.sqlite3
 music_controller/music_controller/settings.py
 */__pycache__
+=======
+secret.txt
+music_controller/spotify/credentials.py
+env/
+>>>>>>> e6376a91c267c9e11323c6b13a087f08a0b30a8f
