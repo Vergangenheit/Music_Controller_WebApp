@@ -1,12 +1,10 @@
+  
 from django.urls import path
 from .views import index
-from typing import List
 
-app_name = 'frontend'
-
-urlpatterns: List = [
-    path('', index, name=''),
+urlpatterns = [
+    path('', index),
     path('join', index),
     path('create', index),
-    path('room/<str:roomCode>', index)
+    path('join/1', index)
 ]
