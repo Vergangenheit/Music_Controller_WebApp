@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '^h$ujm2h0*vcndn0+tt*3nno58%!&jfs)kvdm7!x7&$l4e1oc@'
+SECRET_KEY = '0eo9a=k$kgq)n0kwb*k)-4)lnd@8#g!i*+!h@y0$+647)r0(a4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -39,8 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api.apps.ApiConfig',
     'rest_framework',
-    'frontend.apps.FrontendConfig',
-    'spotify.apps.SpotifyConfig'
 ]
 
 MIDDLEWARE = [
