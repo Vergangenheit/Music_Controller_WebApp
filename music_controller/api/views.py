@@ -7,7 +7,8 @@ from django.db.models.query import QuerySet
 from django.http import HttpRequest
 from rest_framework.views import APIView
 from rest_framework.utils.serializer_helpers import ReturnDict
-
+from typing import Dict
+from django.http import JsonResponse
 # Create your views here.
 
 
@@ -80,6 +81,18 @@ class CreateRoomView(APIView):
                 return Response(RoomSerializer(room).data, status=status.HTTP_201_CREATED)
 
         return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+
+class UserInRoom(APIView):
+
+    def get(self, request: HttpRequest, format=None):
+        if not self.request.session.exists(self.request.session.session_key):
+            self.request.session.create()
+            
+        data: Dict = {
+            'code': self.request.session.get('room-code')
+            }
+        
+        return JsonResponse(data, status=status.HTTP_200_OK)
 
 
 
