@@ -89,10 +89,22 @@ class UserInRoom(APIView):
             self.request.session.create()
             
         data: Dict = {
-            'code': self.request.session.get('room-code')
+            'code': self.request.session.get('room_code')
             }
         
         return JsonResponse(data, status=status.HTTP_200_OK)
+
+class LeaveRoom(APIView):
+    def post(self, request:  HttpRequest, format=None) -> Response:
+        if 'room-code' in self.request.session:
+            self.request.session.pop('room_code')
+            host_id = self.request.session.session_key
+            room_results: QuerySet = Room.object.filter(host=host_id)
+            if len(room_results) > 0:
+                room: Room = room_results[0]
+                room.delete()
+
+        return Response({'Message':'Success'}, status=status.HTTP_200_OK)
 
 
 
