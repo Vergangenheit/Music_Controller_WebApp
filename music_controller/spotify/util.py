@@ -3,6 +3,10 @@ from django.utils import timezone
 from .models import SpotifyToken
 from datetime import timedelta, datetime
 from typing import Optional, Dict
+from requests import post, put, get, Response
+from .credentials import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+
+BASE_URL = "https://api.spotify.com/v1/me/"
 
 def get_user_tokens(session_id: str) -> Optional[SpotifyToken]:
     user_tokens: QuerySet = SpotifyToken.objects.filter(user=session_id)
@@ -59,3 +63,23 @@ def refresh_spotify_token(session_id: str):
 
     update_or_create_user_tokens(
         session_id, access_token, token_type, expires_in, refresh_token)
+
+def execute_spotify_api_request(session_id: str, endpoint: str, post_: bool = False, put_: bool = False) -> Dict:
+    tokens = Optional[SpotifyToken] = get_user_tokens(session_id)
+    header: Dict = {'Content-Type': 'application/json',
+               'Authorization': "Bearer " + tokens.access_token}
+    
+    if post_:
+        # send a post req
+        post(BASE_URL + endpoint, headers=headers)
+    
+    if put_:
+        put(BASE_URL + endpoint, headers=headers)
+
+    response: Response = get(BASE_URL + endpoint, {}, headers=headers)
+
+    try:
+        return response.json()
+    except:
+        return {'Error': 'Issue with request'}
+
