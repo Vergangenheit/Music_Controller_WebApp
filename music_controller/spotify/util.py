@@ -65,8 +65,8 @@ def refresh_spotify_token(session_id: str):
         session_id, access_token, token_type, expires_in, refresh_token)
 
 def execute_spotify_api_request(session_id: str, endpoint: str, post_: bool = False, put_: bool = False) -> Dict:
-    tokens = Optional[SpotifyToken] = get_user_tokens(session_id)
-    header: Dict = {'Content-Type': 'application/json',
+    tokens : Optional[SpotifyToken] = get_user_tokens(session_id)
+    headers: Dict = {'Content-Type': 'application/json',
                'Authorization': "Bearer " + tokens.access_token}
     
     if post_:

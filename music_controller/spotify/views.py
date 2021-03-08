@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpRequest
 from .credentials import REDIRECT_URI, CLIENT_ID, CLIENT_SECRET
 from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework import response
 from rest_framework import status
 from requests import Request, post
 from typing import Dict
@@ -21,7 +21,7 @@ class AuthURL(APIView):
             'client_id': CLIENT_ID
         }).prepare().url
 
-        return Response({'url': url}, status=status.HTTP_200_OK)
+        return response.Response({'url': url}, status=status.HTTP_200_OK)
 
 def spotify_callback(request: HttpRequest, format=None):
     code: str = request.GET.get('code')
@@ -53,7 +53,7 @@ class IsAuthenticated(APIView):
     def get(self, request: HttpRequest, format=None) -> Response:
         is_authenticated: bool = is_spotify_authenticated(
             self.request.session.session_key)
-        return Response({'status': is_authenticated}, status=status.HTTP_200_OK)
+        return response.Response({'status': is_authenticated}, status.HTTP_200_OK)
 
 class CurrentSong(APIView):
     def get(self, request: HttpRequest, format=None) -> Response:
@@ -63,13 +63,41 @@ class CurrentSong(APIView):
         if room.exists():
             room: Room = room[0] 
         else:
-            return Response({}, status=status.HTTP_404_NOT_FOUND)   
+            return response.Response({}, status=status.HTTP_404_NOT_FOUND)   
         host: str = room.host
         endpoint: str = "player/currently-playing"
-        response: Dict = execute_spotify_api_request(host, endpoint)
-        print(response)
+        resp: Dict = execute_spotify_api_request(host, endpoint)
 
-        return Response(response, status=status.HTTP_200_OK)
+        # check if we have a playing song
+        if 'error' in resp or 'item' not in resp:
+            return response.Response({}, status=status.HTTP_204_NO_CONTENT)
+
+        item: Dict = resp.get('item')
+        duration: float = item.get('duration_ms')
+        progress: float = resp.get('progress_ms')
+        album_cover: str = item.get('album').get('images')[0].get('url')
+        is_playing: bool = resp.get('is_playing')
+        song_id: str = item.get('id')
+
+        artist_string: str = ""
+        for i, artist in enumerate(item.get('artists')):
+            if i > 0:
+                artist_string += ", "
+            name: str = artist.get('name')
+            artist_string += name
+
+        song: Dict = {
+            'title': item.get('name'),
+            'artist': artist_string,
+            'duration': duration,
+            'time': progress,
+            'image_url': album_cover,
+            'is_playing': is_playing,
+            'votes': 0,
+            'id': song_id
+        }
+
+        return response.Response(song, status=status.HTTP_200_OK)
 
 
 
