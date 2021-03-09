@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from .credentials import REDIRECT_URI, CLIENT_ID, CLIENT_SECRET
 from rest_framework.views import APIView
 from rest_framework import response
@@ -56,7 +56,7 @@ class IsAuthenticated(APIView):
         return response.Response({'status': is_authenticated}, status.HTTP_200_OK)
 
 class CurrentSong(APIView):
-    def get(self, request: HttpRequest, format=None) -> Response:
+    def get(self, request: HttpRequest, format=None) -> response.Response:
         room_code: str = self.request.session.get('room_code')
         # check if requester is host or not
         room: QuerySet = Room.objects.filter(code=room_code)
@@ -99,5 +99,24 @@ class CurrentSong(APIView):
 
         return response.Response(song, status=status.HTTP_200_OK)
 
+class  PauseSong(APIView):
+    def put(self, resp: HttpResponse, format=None) -> response.Response:
+        room_code: str = self.request.session.get('room_code')
+        room: Room = Room.objects.filter(code=room_code)[0]
+        if self.request.session.session_key == room.host or room.guest_can_pause:
+            pause_song(room.host)
+            return response.Response({}, status=status.HTTP_204_NO_CONTENT)
+        
+        return response.Response({}, status=status.HTTP_403_FORBIDDEN)
+
+class  PlaySong(APIView):
+    def put(self, resp: HttpResponse, format=None) -> response.Response:
+        room_code: str = self.request.session.get('room_code')
+        room: Room = Room.objects.filter(code=room_code)[0]
+        if self.request.session.session_key == room.host or room.guest_can_pause:
+            play_song(room.host)
+            return response.Response({}, status=status.HTTP_204_NO_CONTENT)
+        
+        return response.Response({}, status=status.HTTP_403_FORBIDDEN)
 
 
