@@ -89,3 +89,6 @@ def play_song(session_id: str) -> Dict:
 def pause_song(session_id: str) -> Dict:
     return execute_spotify_api_request(session_id, "player/pause", put_=False)
 
+def skip_song(session_id: str) -> Dict:
+    return execute_spotify_api_request(session_id, "player/next", post_=True)
+

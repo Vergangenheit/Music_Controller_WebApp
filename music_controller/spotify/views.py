@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpRequest, HttpResponse
+from django.db.models.query import QuerySet
 from .credentials import REDIRECT_URI, CLIENT_ID, CLIENT_SECRET
 from rest_framework.views import APIView
 from rest_framework import response
@@ -8,6 +9,7 @@ from requests import Request, post
 from typing import Dict
 from .util import *
 from api.models import Room
+from .models import Vote
 
 # Create your views here.
 class AuthURL(APIView):
@@ -86,6 +88,7 @@ class CurrentSong(APIView):
             name: str = artist.get('name')
             artist_string += name
 
+        votes: int = len(Vote.objects.filter(room=room, song_id=song_id))
         song: Dict = {
             'title': item.get('name'),
             'artist': artist_string,
@@ -93,11 +96,25 @@ class CurrentSong(APIView):
             'time': progress,
             'image_url': album_cover,
             'is_playing': is_playing,
-            'votes': 0,
+            'votes': votes,
+            'votes_required': room.votes_to_skip,
             'id': song_id
         }
+        self.update_room_song(room, song_id)
 
         return response.Response(song, status=status.HTTP_200_OK)
+
+    def update_room_song(self, room: Room, song_id: str):
+        current_song: str = room.current_song
+
+        if current_song != song_id:
+            # means the song changed
+            room.current_song = song_id
+            room.save(update_fields=['current_song'])
+            # from now on all the votes we had in the room are automatically invalid
+            votes: QuerySet = Vote.objects.filter(room=room).delete()
+
+
 
 class  PauseSong(APIView):
     def put(self, resp: HttpResponse, format=None) -> response.Response:
@@ -118,5 +135,25 @@ class  PlaySong(APIView):
             return response.Response({}, status=status.HTTP_204_NO_CONTENT)
         
         return response.Response({}, status=status.HTTP_403_FORBIDDEN)
+
+class SkipSong(APIView):
+    def post(self, request: HttpRequest, format=None) -> response.Response:
+        room_code: str = self.request.session.get('room_code')
+        room: Room = Room.objects.filter(code=room_code)[0]
+        # get all the votes for the current song
+        votes: QuerySet = Vote.objects.filter(room=room, song_id=room.current_song)
+        votes_needed: int = room.votes_to_skip
+
+        if self.request.session.session_key == room.host or len(votes) + 1 >= votes_needed:
+            # we should also clear all of the votes
+            votes.delete()
+            skip_song(room.host)
+        else:
+            # if we're not the host we need to register a vote
+            vote: Vote = Vote(user=self.request.session.session_key, room=room, song_id=room.current_song)
+            vote.save()
+
+        return response.Response({}, status.HTTP_204_NO_CONTENT)
+
 
 
